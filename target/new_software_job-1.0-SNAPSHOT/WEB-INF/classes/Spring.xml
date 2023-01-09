@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:context="http://www.springframework.org/schema/context" xmlns:tx="http://www.springframework.org/schema/tx"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd http://www.springframework.org/schema/context https://www.springframework.org/schema/context/spring-context.xsd http://www.springframework.org/schema/tx http://www.springframework.org/schema/tx/spring-tx.xsd">
+
+<!--    扫描组件（除了控制层的组件）-->
+    <context:component-scan base-package="com.ZZU.jQuery.setting.service">
+        <context:exclude-filter type="annotation" expression="org.springframework.stereotype.Controller"/>
+    </context:component-scan>
+
+    <context:component-scan base-package="com.ZZU.jQuery.workbench.service">
+        <context:exclude-filter type="annotation" expression="org.springframework.stereotype.Controller"/>
+    </context:component-scan>
+
+<!--    引入jdbc.properties-->
+    <context:property-placeholder location="classpath:jdbc.properties"></context:property-placeholder>
+
+<!--    引入数据源-->
+    <bean id="dataSource" class="com.alibaba.druid.pool.DruidDataSource">
+        <property name="driverClassName" value="${jdbc.driver}"></property>
+        <property name="url" value="${jdbc.url}"></property>
+        <property name="username" value="${jdbc.username}"></property>
+        <property name="password" value="${jdbc.password}"></property>
+    </bean>
+
+<!--    配置事务管理器，相当于AOP中的切面-->
+    <bean id="transactionManager" class="org.springframework.jdbc.datasource.DataSourceTransactionManager">
+        <property name="dataSource" ref="dataSource"></property>
+    </bean>
+
+<!--    开启事务注解驱动
+        相当于环绕通知，@Transactional作用于方法或者类上，说明此方法或者类中的全部方法都装配声明式事务
+-->
+    <tx:annotation-driven transaction-manager="transactionManager"/>
+
+<!--    配置SqlSessionFactoryBean类，以此来获得SqlSessionFactory-->
+    <bean class="org.mybatis.spring.SqlSessionFactoryBean">
+<!--       SqlSessionFactory本质是通过配置文件来获取得到的，所以需要通过mybatis的配置文件
+            如果不想要mybatis的配置文件，则需要在此bean中配置mybatis配置文件所需要的内容
+ -->
+        <property name="configLocation" value="classpath:mybatis-config.xml"></property>
+        <!--配置数据源-->
+        <property name="dataSource" ref="dataSource"></property>
+        <!--配置此包下所有类的别名-->
+        <property name="typeAliasesPackage" value="com.ZZU.jQuery.setting.pojo,
+                                                   com.ZZU.jQuery.workbench.pojo "></property>
+        <!--配置mapper映射文件的位置，如果mapper映射文件的包跟mapper接口的包一致，并且名字也一致
+            不需要配置
+        -->
+<!--        <property name="mapperLocations" value="classpath:com.ZZU.SSM.mapper/*.xml"></property>-->
+    </bean>
+
+    <!--mapper扫描配置，将basePackage包下的所有mapper接口通过SqlSessionFactoryBean类
+        来生成该接口的代理类，并且存储在IOC容器中。
+        **在之后的使用中不需要在获取SqlSession以及通过SqlSession来获取代理类，只需要通过自动装配注解即可实现
+    -->
+    <bean class="org.mybatis.spring.mapper.MapperScannerConfigurer">
+        <property name="basePackage" value="com.ZZU.jQuery.setting.mapper,
+                                            com.ZZU.jQuery.workbench.mapper"></property>
+    </bean>
+</beans>
